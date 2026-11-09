@@ -24,8 +24,10 @@ body.g #bg{opacity:.1}
 .v{position:absolute;inset:0;display:none}
 body:not(.g) #home{display:block}
 body.g #game{display:grid;grid-template-rows:1fr auto 1fr}
-#st,#ctr{position:absolute;left:0;right:0;margin:0 auto;width:calc(100% - 62px);max-width:440px}
-#st{top:8%;text-align:center;font-style:italic;font-size:17px;line-height:1.15;color:var(--mut)}
+#st,#ctr,#pb{position:absolute;left:0;right:0;margin:0 auto;width:calc(100% - 62px);max-width:440px}
+#st,#pb{text-align:center;font-style:italic;font-size:17px;line-height:1.15;color:var(--mut)}
+#st{top:8%}
+#pb{bottom:8%}
 #ctr{top:41%}
 h1,#ttl{font-weight:400;font-size:38px;line-height:1;text-align:center;display:block;width:100%}
 .row{display:grid;grid-template-columns:2.1fr 1fr;gap:22px;margin-top:34px}
@@ -55,13 +57,14 @@ h1,#ttl{font-weight:400;font-size:38px;line-height:1;text-align:center;display:b
 #end h2{font-weight:400;font-size:38px}
 #end p{font-style:italic;color:var(--mut);font-size:19px}
 #eb{width:160px;margin-top:18px}
-.ai #st,.ai #ctr h1,.ai #go,.ai #df{opacity:0}
+.ai #st,.ai #pb,.ai #ctr h1,.ai #go,.ai #df{opacity:0}
 </style>
 </head>
 <body>
 <canvas id="bg"></canvas>
 <main id="home" class="v">
   <p id="st"></p>
+  <p id="pb"></p>
   <div id="ctr"><h1>Sudoku</h1>
     <div class="row"><button class="pill" id="go">Start a new game</button><button class="pill" id="df"></button></div>
   </div>
@@ -81,7 +84,7 @@ const $=s=>document.querySelector(s),N=['Easy','Medium','Hard','Expert'],KEY='sd
 const sh=a=>{for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const fmt=s=>{s=Math.floor(s);return(s/60|0)+':'+String(s%60).padStart(2,'0')};
 const A=!!window.anime&&!matchMedia('(prefers-reduced-motion: reduce)').matches,fsz=e=>parseFloat(getComputedStyle(e).fontSize);
-let busy=0,S={p:0,w:0,t:0,d:[0,0,0,0],h:-1,lv:2},G=null;
+let busy=0,S={p:0,w:0,t:0,d:[0,0,0,0],b:[0,0,0,0],h:-1,lv:2},G=null;
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY))||{})}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
@@ -135,6 +138,7 @@ function stats(){
   if(S.h>=0)a.push('Hardest difficulty: '+N[S.h]);
   if(S.p)a.push('You solved sudoku '+Math.round(S.w/S.p*100)+'% of the time.');
   $('#st').textContent=a.join('\u2003');
+  $('#pb').textContent=S.b[S.h]>0?'Personal best: '+N[S.h]+' in '+fmt(S.b[S.h]):'';
 }
 function home(){const r0=A&&G?$('#ttl').getBoundingClientRect():null;G=null;document.body.classList.remove('g');stats();if(A)introHome(r0)}
 function start(){
@@ -145,7 +149,7 @@ function start(){
   G={p,sol,cur:Int8Array.from(p),sel:-1,mis:0,el:0,last:performance.now(),lv,over:false,fx:-1,fn:0,nt:new Uint16Array(81),nm:false};
   $('#end').style.display='none';
   document.body.classList.add('g');draw();busy=0;if(A)introGame(r0)};
-  if(A)anime({targets:['#go','#df','#st'],opacity:0,duration:220,easing:'easeInQuad'}).finished.then(run);else run();
+  if(A)anime({targets:['#go','#df','#st','#pb'],opacity:0,duration:220,easing:'easeInQuad'}).finished.then(run);else run();
 }
 function draw(){
   const g=G,s=g.sel,r=s/9|0,c=s%9,b=bx(Math.max(s,0)),cnt=Array(10).fill(0);
@@ -186,7 +190,7 @@ function put(n){
 function acc(){const n=performance.now();if(G&&!G.over&&!document.hidden)G.el+=(n-G.last)/1000;if(G)G.last=n}
 function end(w){
   const g=G;acc();g.over=true;
-  if(w){S.w++;S.t+=g.el;S.h=Math.max(S.h,g.lv);save()}
+  if(w){S.w++;S.t+=g.el;S.h=Math.max(S.h,g.lv);if(!S.b[g.lv]||g.el<S.b[g.lv])S.b[g.lv]=g.el;save()}
   $('#em').textContent=w?'Solved':'Out of mistakes';
   $('#es').textContent=N[g.lv]+' \u00b7 '+fmt(g.el);
   setTimeout(()=>{if(G===g){$('#end').style.display='flex';if(A)anime({targets:'#end',opacity:[0,1],duration:400,easing:'linear'})}},500);
@@ -212,12 +216,12 @@ function introHome(r0){
   const b=[$('#go'),$('#df')],row=$('.row').getBoundingClientRect(),cx=row.left+row.width/2,
     dx=b.map(e=>{const r=e.getBoundingClientRect();return cx-r.left-r.width/2});
   anime.set(b,{translateX:(e,i)=>dx[i],scale:.5,opacity:0});
-  anime.set('#st',{opacity:0});
+  anime.set(['#st','#pb'],{opacity:0});
   const tl=anime.timeline({easing:'easeOutCubic'});
   tl.add({targets:b,translateX:(e,i)=>[dx[i],0],scale:[.5,1],opacity:[0,1],duration:800,easing:'easeOutQuart'},0);
   if(r0){anime.set('#ctr h1',{opacity:1});fly($('#ctr h1'),r0,fsz($('#ttl')))}
   else{anime.set('#ctr h1',{opacity:0});tl.add({targets:'#ctr h1',opacity:[0,1],translateY:[10,0],duration:700},250)}
-  tl.add({targets:'#st',opacity:[0,1],duration:700},750);
+  tl.add({targets:['#st','#pb'],opacity:[0,1],duration:700},750);
 }
 function introGame(r0){
   const t=cells.map(c=>c.firstChild);
@@ -234,7 +238,7 @@ function introGame(r0){
   anime({targets:'#nt',opacity:[0,1],scale:[.6,1],duration:420,delay:960,easing:'easeOutBack'});
 }
 if(A){
-  anime.set(['#st','#ctr h1','#go','#df'],{opacity:0});
+  anime.set(['#st','#pb','#ctr h1','#go','#df'],{opacity:0});
   document.documentElement.classList.remove('ai');
   const L=f=>document.fonts.load(f).catch(()=>0);
   Promise.race([Promise.all([L('38px "Instrument Serif"'),L('italic 17px "Instrument Serif"')]),new Promise(r=>setTimeout(r,1500))]).then(()=>introHome());
