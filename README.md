@@ -8,7 +8,7 @@ No build step, no framework, no dependencies to install.
 
 - **Four difficulties:** Easy, Medium, Hard and Expert. Tap the difficulty button to cycle through them.
 - **Unique-solution puzzles:** generated on the device for every new game.
-- **Stats on the landing screen:** games played, average solve time, favorite difficulty, hardest difficulty solved and solve rate.
+- **Stats on the landing screen:** games played, average solve time, favorite difficulty, hardest difficulty solved and solve rate. A personal best (fastest solve on the hardest difficulty solved) sits at the bottom of the screen.
 - **Notes:** pencil marks that clear automatically when a number is placed in the same row, column or box.
 - **Cell highlighting:** the selected cell, its row, column and box, and every cell with the same digit.
 - **Mistake limit:** wrong numbers are never placed. Three mistakes end the game.
